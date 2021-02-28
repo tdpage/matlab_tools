@@ -139,8 +139,8 @@ done
 # if certain fields haven't been entered, set some defaults based on the filename
 [[ "$filename" = "" ]]    && filename="myfun.m"
 [[ "$function" = "" ]]    && function=${filename%.*}
-[[ "$inputs"   = "" ]]    && inputs="x"
-[[ "$returns"  = "" ]]    && returns="y"
+[[ "$inputs"   = "" ]]    && inputs=""
+[[ "$returns"  = "" ]]    && returns=""
 [[ "$desc"     = "" ]]    && desc="Matlab Function to ..."
 [[ "$comment"  = "" ]]    && comment=""
 # [[ "$dir" = "" ]]         && dir=""
