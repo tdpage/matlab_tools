@@ -1,0 +1,174 @@
+#!/bin/bash 
+
+# This script makes a folder file structure for Matlab scripting
+
+
+## Constants
+RIGHT_NOW="$(date +"%x %r %Z")"
+TIME_STAMP="Updated $RIGHT_NOW by $USER"
+SCRIPT="$(basename $0)"
+
+## Functions
+
+make_file_structure(){
+    [ -d "./$dir" ] || mkdir "./$dir"
+    for subdir in data documents libraries scripts models work plots; do
+        [ -d "./$dir$subdir" ] || mkdir -p "./$dir$subdir"
+    done
+}
+
+write_setup_script(){
+    cat <<- _EOF_
+% $TIME_STAMP
+
+clearvars
+close all
+
+% Root directory of this running .m file
+projectRootDir = fileparts(mfilename('fullpath'));
+
+% Add project directories to path
+addpath(fullfile(projectRootDir,'data'     ),'-end');
+addpath(fullfile(projectRootDir,'documents'),'-end');
+addpath(fullfile(projectRootDir,'libraries'),'-end');
+addpath(fullfile(projectRootDir,'models'   ),'-end');
+addpath(fullfile(projectRootDir,'plots'    ),'-end');
+addpath(fullfile(projectRootDir,'work'     ),'-end');
+addpath(fullfile(projectRootDir,'scripts'  ),'-end');
+
+% Save Simulink-generated helper files to work
+Simulink.fileGenControl('set', ...
+    'CacheFolder',fullfile(projectRootDir,'work'), ...
+    'CodeGenFolder',fullfile(projectRootDir,'work'));
+_EOF_
+}
+
+write_cleanup_script(){
+    cat <<- _EOF_ 
+% $TIME_STAMP
+
+% Root directory of this running .m file
+projectRootDir = fileparts(mfilename('fullpath'));
+
+% Remove project directories from path
+rmpath(fullfile(projectRootDir,'data'     ));
+rmpath(fullfile(projectRootDir,'documents'));
+rmpath(fullfile(projectRootDir,'libraries'));
+rmpath(fullfile(projectRootDir,'models'   ));
+rmpath(fullfile(projectRootDir,'plots'    ));
+rmpath(fullfile(projectRootDir,'work'     ));
+rmpath(fullfile(projectRootDir,'scripts'  ));
+
+% Reset the loction of Simulink-generated files
+Simulink.fileGenControl('reset');
+
+% leave no trace...
+clear projectRootDir
+
+_EOF_
+}
+
+write_main_script(){
+    cat <<- _EOF_
+% ----------------------------------------------------------
+% File: $filename
+% Auth: $author
+% Date: $RIGHT_NOW
+% 
+% Func: $function
+% Meth: $method
+% Comm: $comment
+% ----------------------------------------------------------
+
+% cleanup
+clear
+close all
+
+_EOF_
+}
+
+usage(){
+    echo "usage: $SCRIPT [option]..."    
+}
+
+help(){
+    usage
+    echo "Create a new Matlab document directory and base script"
+    echo
+    echo "  -o,  --output              output filename         (new_script.m)"
+    echo "  -d,  --directory           directory name              (project/)"
+    echo "  -a,  --author              document author           (Fred Jones)"
+    echo "  -D,  --date                document date             (02/28/2020)"
+    echo "  -f,  --function            header comment for overall function"
+    echo "  -m,  --method              header comment for methods"
+    echo "  -c,  --comment             header general comment"
+#     echo "  -T,  --type                document type         (Simulink setup)"
+    echo "  -h,  --help                display this help and exit"
+    echo
+    echo "Visit https://github.com/tdpage/matlab_tools for more info"
+}
+
+## Main
+
+
+# initialize some fields
+filename=       # filename including extension
+directory=      # directory to place file
+author=         # document author
+date=           # date
+method=         # method comment in header block 
+function=       # function comment in header block 
+comment=        # additional comment in header block 
+# type=           # document type
+
+# read flags
+while [ "$1" != "" ]; do
+    case $1 in
+        -o | --output    )      shift
+                                filename=$1
+                                ;;
+        -d | --directory )      shift
+                                dir=$1
+                                ;;
+        -a | --author    )     shift
+                                author=$1
+                                ;;
+        -D | --date      )      shift
+                                date=$1
+                                ;;
+        -f | --function  )      shift
+                                function=$1
+                                ;;      
+        -m | --method    )      shift
+                                method=$1
+                                ;;
+        -c | --comment   )      shift
+                                comment=$1
+                                ;;      
+#         -T | --type      )      shift
+#                                 type=$1
+#                                 ;;
+        -h | --help      )      help
+                                exit
+                                ;;
+        * )                     usage
+                                exit 1
+    esac
+    shift
+done
+
+# if certain fields haven't been entered, set some defaults based on the filename
+[[ "$filename" = "" ]]    && filename="new_script.m"
+[[ "$dir" = "" ]]         && dir="${filename%.*}/"
+[[ "$author" = "" ]]      && author="$USER"
+[[ "$date" = "" ]]        && date=$(date +%m/%d/%Y)
+# [[ "$function" = "" ]]    && function=""
+# [[ "$method" = "" ]]      && method=""
+# [[ "$comment" = "" ]]      && comment=""
+# [[ "$type" = "" ]]        && type="general"
+
+make_file_structure
+# If the following scripts don't exist, make them
+[ -f "./$dir"setup.m ] || write_setup_script >> "./$dir"setup.m
+[ -f "./$dir"cleanup.m ] || write_cleanup_script >> "./$dir"cleanup.m
+[ -f "./$dir"scripts/"$filename" ] || write_main_script >> "./$dir"scripts/"$filename"
