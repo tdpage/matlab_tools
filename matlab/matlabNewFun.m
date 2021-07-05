@@ -1,7 +1,7 @@
 function [] = matlabNewFun(varargin)
 %
 % matlabNewFun:
-%   Wrapper function for system bash script matlabnewfun.sh
+%   Wrapper function for system bash script matlabnewfun
 %
 % Usage:
 %   [] = matlabNewFun();
